@@ -19,19 +19,27 @@ export const addauthor = async (req, res, next) => {
 
 
 
+// Retrieve all authors with pagination and search
 export const retriveallauthors = async (req, res, next) => {
-
     try {
+        const { page = 1, limit = 10, name, bio } = req.query;
+        const query = {};
+        if (name) query.name = { $regex: name, $options: "i" };
+        if (bio) query.bio = { $regex: bio, $options: "i" };
+        
+        const authors = await Author.find(query).limit(limit * 1).skip((page - 1) * limit).exec();
+        const count = await Author.countDocuments(query);
 
-        const authors = await Author.find()
-        if (authors) {
-            return res.status(200).json({ data: authors, success: true })
-        }
-        throw Error("authors not found")
+        return res.status(200).json({
+            data: authors,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            success: true
+        });
     } catch (err) {
-        return res.status(err.cause || 500).json({ message: err.message })
+        return res.status(err.cause || 500).json({ message: err.message });
     }
-}
+};
 
 
 export const get_author_by_id = async (req,res,next) => {

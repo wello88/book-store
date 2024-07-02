@@ -21,18 +21,26 @@ export const addbook = async (req, res, next) => {
 
 
 export const retriveallbooks = async (req, res, next) => {
-
     try {
+        const { page = 1, limit = 10, title, author } = req.query;
+        const query = {};
+        if (title) query.title = { $regex: title, $options: "i" };
+        if (author) query.author = { $regex: author, $options: "i" };
 
-        const books = await Book.find()
-        if (books) {
-            return res.status(200).json({ data: books, success: true })
-        }
-        throw Error("books not found")
+        const books = await Book.find(query).limit(limit * 1).skip((page - 1) * limit).exec();
+        const count = await Book.countDocuments(query);
+
+        return res.status(200).json({
+            data: books,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            success: true
+        });
     } catch (err) {
-        return res.status(err.cause || 500).json({ message: err.message })
+        return res.status(err.cause || 500).json({ message: err.message });
     }
-}
+};
+
 
 
 
